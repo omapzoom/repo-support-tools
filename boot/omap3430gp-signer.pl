@@ -23,7 +23,7 @@ use File::stat;
 use Getopt::Std;
 
 ################# MAIN ##############################################
-# get options
+# get user options
 my %options = ();
 getopt( "a", \%options );
 
