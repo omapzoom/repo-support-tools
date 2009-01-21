@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ "$http_proxy" == "" ]
+then
+	echo "ERROR:: Set http_proxy"
+	exit 1
+else
+	no_prot=${http_proxy#*:}
+	deslashed=${no_prot#*//}
+	PROXY_HOST=${deslashed%%:*}
+	PROXY_PORT=${deslashed#*:}
+fi
+
+exec /usr/bin/corkscrew wwwgate.ti.com 80 $*
