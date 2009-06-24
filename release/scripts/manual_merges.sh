@@ -32,7 +32,7 @@ MYDROID=`pwd`
 # 9889: Added support for new Overlay APIs. (from L25.8)
 # 9890: Overlay - rearranged destruction of overlay components (from L25.8)
 # 9895: CameraService: Recreate overlay only if height and width has changed. (from L25.8)
-# 9889: Added support for new Overlay APIs. (from L25.8)
+# 9899: overlay.h - Added a new API setAttributes to data side
 # 9900: Overlay: Added support for new overlay API setAttributes (from L25.8)
 # 9903: Initialize mVisibilityChanged to fix a bug (from L25.8)
 # 9958: Clearing FrameBuffer when Overlay is in use. (from L25.8)
