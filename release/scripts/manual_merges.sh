@@ -37,11 +37,11 @@ MYDROID=`pwd`
 # *******************************************************************************
 # commands to run manually
 
-cd $MYDROID/kernel/2.6.29
+cd $MYDROID/kernel/android-2.6.29
 echo "Adding patch 10588"
-git pull git://android.git.kernel.org/kernel/omap refs/changes/88/10558/1
+git pull git://android.git.kernel.org/kernel/omap refs/changes/88/10588/1
 echo "Adding patch 10589"
-git pull git://android.git.kernel.org/kernel/omap refs/changes/59/10559/1
+git pull git://android.git.kernel.org/kernel/omap refs/changes/89/10589/1
 echo "Adding patch 10597"
 git pull git://android.git.kernel.org/kernel/omap refs/changes/97/10597/1
 echo "Adding patch 10618"
