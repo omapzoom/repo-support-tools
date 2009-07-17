@@ -73,13 +73,13 @@ git pull git://android.git.kernel.org/kernel/omap refs/changes/81/10681/1
 
 
 #echo
-#echo "   Pulling Audio Feature Tree"
-#git pull git://dev.omapzoom.org/pub/scm/misael/android-2.6.29-audio.git audio-2.6.29-25.10
+echo "   Pulling Audio Feature Tree"
+git pull git://dev.omapzoom.org/pub/scm/misael/android-2.6.29-audio.git audio-2.6.29-25.10-rc1
 
 #echo
-#echo "Bridge Patches"
-#echo "   Adding bridge driver release patches from android branch"
-#git pull git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git bridge-2.6.29-25.10-P1
+echo "Bridge Patches"
+echo "   Adding bridge driver release patches from android branch"
+git pull git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git bridge-2.6.29-25.10-P1
 
 echo
 echo "Multimedia Patches"
