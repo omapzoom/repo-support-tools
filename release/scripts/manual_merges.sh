@@ -140,6 +140,11 @@ echo "   Adding 10747"
 git pull git://android.git.kernel.org/kernel/omap refs/changes/47/10747/1
 
 echo
+echo "Camera Patches"
+echo "	Adding camera release patches from android branch"
+git pull git://dev.omapzoom.org/pub/scm/dcurran/android-2.6.29-camera.git cam-2.6.29-25.10-rc2
+
+echo
 echo "Multimedia Patches"
 echo "   Adding 9849"
 cd $MYDROID/external/skia
