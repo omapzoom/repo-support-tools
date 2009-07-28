@@ -143,6 +143,7 @@ echo
 echo "Camera Patches"
 echo "	Adding camera release patches from android branch"
 git pull git://dev.omapzoom.org/pub/scm/dcurran/android-2.6.29-camera.git cam-2.6.29-25.10-rc2
+git pull git://dev.omapzoom.org/pub/scm/dcurran/android-2.6.29-camera.git cam-2.6.29-25.10-rc3
 
 echo
 echo "Multimedia Patches"
