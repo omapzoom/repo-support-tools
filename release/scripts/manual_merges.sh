@@ -40,8 +40,6 @@ MYDROID=`pwd`
 
 echo "Camera patches"
 cd $MYDROID/packages/apps/Camera
-echo "	 Reseting HEAD to 5de4e421e17f1c"
-git reset --hard 5de4e421e17f1c2ed35fa1ccf8777838e884f66b
 echo "   Adding patch 702"
 git pull git://git.omapzoom.org/platform/packages/apps/Camera refs/changes/02/702/1
 echo "   Adding patch 556"
