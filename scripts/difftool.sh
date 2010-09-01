@@ -17,7 +17,7 @@
 # 				git log of all repositories that changed.
 ### END INFO
 
-source $(dirname $0)/../build_scripts/000_ENVVariables.sh
+[ -e $(dirname $0)/../build_scripts/000_ENVVariables.sh ] && source $(dirname $0)/../build_scripts/000_ENVVariables.sh
 
 ###
 # test case
