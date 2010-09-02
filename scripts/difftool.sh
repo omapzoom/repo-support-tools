@@ -57,7 +57,7 @@ log () {
 checkdeps () {
 	if [ ! -x $diff ]; then
 		log "error: diffutils not found in ${diff}. please check"
-		exit 2
+		exit 0
 	fi
 }
 
@@ -65,24 +65,24 @@ checkargs () {
 
 	if [ $# -lt $ARGS_MIN ] || [ $# -gt $ARGS_MAX ]; then
 		usage
-		exit 85
+		exit 0
 	fi
 
 	if [ ! -e $1 ] || [ ! -e $2 ]; then
 		log "error: manifest file not found"
-		exit 4
+		exit 0
 	fi
 
 	if [ ! -z $3 ]; then
 		if [ ! -d $3 ]; then
 			log "repo directory $3 not found, please check"
-			exit 3
+			exit 0
 		fi
 		REPODIR=$3
 	else
 		if [ ! -d $REPODIR ]; then
 			log "default repo dir $REPODIR not found, give me the correct path as third argument"
-			exit 3
+			exit 0
 		fi
 	fi
 }
