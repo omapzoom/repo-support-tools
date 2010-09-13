@@ -17,7 +17,7 @@
 # 				git log of all repositories that changed.
 ### END INFO
 
-[ -e $(dirname $0)/../build_scripts/000_ENVVariables.sh ] && source $(dirname $0)/../build_scripts/000_ENVVariables.sh
+[ -e ${SCRIPTS}/000_ENVVariables.sh ] && source ${SCRIPTS}/000_ENVVariables.sh
 
 ###
 # test case
@@ -25,7 +25,7 @@
 #source $(dirname $0)/testcase.sh
 
 CLEARCASE_UPLOAD_DIR=${CLEARCASE_UPLOAD_DIR-/vobs/wtbu/CSSD_Linux_Releases/4430/Linux_27.x/PDB/DailyBuilds}
-PREV_MANIFEST=${PREV_MANIFEST-undefined}
+PREV_MANIFEST=${PREV_MANIFEST}
 CURDIR=$(dirname $0)
 LOGDIR=${LOGDIR-$CURDIR}
 U_CONFIG_DIR=${U_CONFIG_DIR-$CURDIR}
