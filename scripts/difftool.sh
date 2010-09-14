@@ -227,10 +227,6 @@ fi
 
 diff_tags=`$diff $diff_opts $OLD_MFST $NEW_MFST |sed -n '/<project.*>/p' |sed 's/[\r\n]/\n/g' |sed 's/^<\s*</<change=\"out\" /g' |sed 's/^>\s*</<change=\"in\" /g' |sed 's/^\s*//g' |sed 's/\s/:/g'`
 
-echo "********************************************" >>$OUTFILE
-echo "Changes between $OLD_MFST and $NEW_MFST" >>$OUTFILE
-echo "********************************************" >>$OUTFILE
-
 if [ -e ${OUTFILE} ]; then
 	cat /dev/null > ${OUTFILE}
 fi
@@ -238,6 +234,9 @@ fi
 for tag in $diff_tags
 do
 	fields=`echo $tag |sed 's/<//' |sed 's/\/>//g' |sed 's/\"//g' | awk -F: '{ print $1, $2, $3, $4, $5, $6}'`
+	name=undefined
+	path=undefined
+	revision=undefined
 
 	for data in $fields
 	do
@@ -273,7 +272,7 @@ do
 	inc_initial=`echo $revision_initial |awk -F\> '{ print $3 }'`
 
 	# If no "path" tag found, use "name" as path
-	if [ -z ${path} ]; then
+	if [ -z ${path} ] || [ "${path}" = "undefined" ]; then
 		path=${name}
 	fi
 
