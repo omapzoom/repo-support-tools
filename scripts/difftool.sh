@@ -105,6 +105,11 @@ get_manifest_files () {
 
 	#lets try to find out the previous build manifest
 	for ((x=0; x < max_tries; x++)); do
+		if [ ${prev_build} -eq 0 ]; then
+			log "\$RELANDDATE reached value of zero so I can't continue looking back. Will try PREV_MANIFEST instead."
+			break
+		fi
+
 		previous_manifest=`echo $RELANDDATE |sed "s/[0-9]*$/${prev_build}/"`
 		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/L${previous_manifest}"
 		previous_manifest="L${previous_manifest}_manifest.xml"
@@ -136,8 +141,11 @@ get_manifest_files () {
                 exit 0
             fi
             # well we found it in PREV_MANIVEST variable so continue
-            previous_manifest=${PREV_MANIFEST##*/}
-            found=true
+			previous_manifest=${PREV_MANIFEST##*/}
+			#get the download url based on PREV_MANIFEST and get ride of configuration part in order it can be rebuilded properly
+			prev_download_location=`echo ${PREV_MANIFEST%/*} |sed 's/\/configuration//'`
+			found=true
+			log "PREV_MANIFEST found. Manifest file downloaded from ${PREV_MANIFEST}"
         else
             # not PREV_MANIFEST setted nor previous manifest file was found, so exit
 			rm -f ${MFST_STORE_DIR}/${cur_manifest}
