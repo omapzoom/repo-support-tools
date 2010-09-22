@@ -30,7 +30,9 @@ CURDIR=$(dirname $0)
 LOGDIR=${LOGDIR-$CURDIR}
 U_CONFIG_DIR=${U_CONFIG_DIR-$CURDIR}
 LOGFILE=$LOGDIR/difftool.log
-OUTFILE=$U_CONFIG_DIR/repo-changes.txt
+PREV_OUT_FILE=$U_CONFIG_DIR/prev_manifest-changes.txt
+REPO_OUT_FILE=$U_CONFIG_DIR/repo-changes.txt
+OUTFILE=${REPO_OUT_FILE}
 MFST_STORE_DIR=${LOGDIR}
 ARGS_MIN=2
 ARGS_MAX=3
@@ -87,21 +89,24 @@ checkargs () {
 	fi
 }
 
-get_manifest_files () {
-	cur_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/L${RELANDDATE}"
-	cur_manifest="L${RELANDDATE}_manifest.xml"
-	cur_build=`echo ${RELANDDATE} |grep -o -E [0-9]+$`
-	prev_build=$(($cur_build -1))
+get_current_manifest () {
+    cur_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/L${RELANDDATE}"
+    cur_manifest="L${RELANDDATE}_manifest.xml"
+    cur_build=`echo ${RELANDDATE} |grep -o -E [0-9]+$`
+    prev_build=$(($cur_build -1))
 
     # here we go, get the manifest files
-	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${cur_manifest} ${cur_download_location}/configuration/${cur_manifest}
-	if [ $? -ne 0 ]; then
-		rm -f ${MFST_STORE_DIR}/${cur_manifest}
-		log "Current Daily Build manifest file ${cur_manifest} not found. Skipped"
-		log "It was trying to fetch from: ${cur_download_location}/configuration/${cur_manifest}"
-		exit 0
-	fi
-	log "Current Daily Build manifest file ${cur_manifest} found and downloaded"
+    wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${cur_manifest} ${cur_download_location}/configuration/${cur_manifest}
+    if [ $? -ne 0 ]; then
+        rm -f ${MFST_STORE_DIR}/${cur_manifest}
+        log "Current Daily Build manifest file ${cur_manifest} not found. Skipped"
+        log "It was trying to fetch from: ${cur_download_location}/configuration/${cur_manifest}"
+        exit 0
+    fi
+    log "Current Daily Build manifest file ${cur_manifest} found and downloaded"
+}
+
+get_manifest_files () {
 
 	#lets try to find out the previous build manifest
 	for ((x=0; x < max_tries; x++)); do
@@ -129,30 +134,9 @@ get_manifest_files () {
 		fi
 	done
 
-    if [ ${found} = "false" ]; then
-        log "Not previous manifest file was found in ${max_tries} tries, will check for \"PREV_MANIFEST\"!"
-        if [ ! -z ${PREV_MANIFEST} ]; then
-            # try to fetch using PREV_MANIFEST (note that must be an url)
-            wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${PREV_MANIFEST##*/} ${PREV_MANIFEST}
-            if [ $? -ne 0 ]; then
-                # cleanup current manifest file
-                rm -f ${MFST_STORE_DIR}/${cur_manifest}
-                log "Previous manifest not found in ${PREV_MANIFEST} I give up for now. Skipping"
-                exit 0
-            fi
-            # well we found it in PREV_MANIVEST variable so continue
-			previous_manifest=${PREV_MANIFEST##*/}
-			#get the download url based on PREV_MANIFEST and get ride of configuration part in order it can be rebuilded properly
-			prev_download_location=`echo ${PREV_MANIFEST%/*} |sed 's/\/configuration//'`
-			found=true
-			log "PREV_MANIFEST found. Manifest file downloaded from ${PREV_MANIFEST}"
-        else
-            # not PREV_MANIFEST setted nor previous manifest file was found, so exit
-			rm -f ${MFST_STORE_DIR}/${cur_manifest}
-            log "\"PREV_MANIFEST\" is empty so could not fetch previous manifest file. You sholud check environment. Skipping"
-            exit 0
-        fi
-    fi
+	if [ ${found} = "false" ]; then
+		log "Couldn't get previous manifest in ${max_tries} tries"
+	fi
 }
 
 get_kernel_diffs () {
@@ -162,73 +146,11 @@ get_kernel_diffs () {
 	echo "debug: prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
 	(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
 	if [ $? -ne 0 ];then
-		echo "there was a problem with git log, check the difftool.log for details"
+		log "Warning: there was a problem getting kernel diffs, please check the difftool.log for details"
 	fi
 }
 
-#################
-#		main 
-#################
-
-checkdeps
-
-while getopts "k:a" opt; do
-	case $opt in
-		a)
-			log "$(basename $0) started in automatic mode...."
-			MODE="automatic"
-			;;
-		k)
-			MODE="kernel_diff"
-			;;
-		\?)
-			log "Invaid option -$OPTARG"
-			exit 0
-			;;
-	esac
-done
-
-if [ "${MODE}" = "standalone" ]; then
-	checkargs $1 $2 $3
-	OLD_MFST=$1
-	NEW_MFST=$2
-elif [ "${MODE}" = "kernel_diff" ]; then
-	REPODIR="."
-	unset KERNEL_DIR
-	PREV_KERNEL_ID=$2
-	CUR_KERNEL_ID=$3
-	get_kernel_diffs
-	exit 0
-elif [ "${MODE}" = "automatic" ]; then
-	get_manifest_files
-	NEW_MFST=$MFST_STORE_DIR/${cur_manifest}
-	OLD_MFST=$MFST_STORE_DIR/${previous_manifest}
-
-	# next we grab kernel commit id
-	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/prev_kernel_commit_id $prev_download_location/configuration/kernel_commit_id
-	if [ $? -ne 0 ]; then
-		log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
-	else
-		PREV_KERNEL_ID=`cat ${MFST_STORE_DIR}/prev_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
-	fi
-
-	# now we have kernel commit id then cleanup file
-	rm -f ${MFST_STORE_DIR}/prev_kernel_commit_id
-
-	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/cur_kernel_commit_id $cur_download_location/configuration/kernel_commit_id
-    if [ $? -ne 0 ]; then
-        log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
-	else
-		CUR_KERNEL_ID=`cat ${MFST_STORE_DIR}/cur_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
-    fi
-
-	# now we have kernel commit id then cleanup file
-	rm -f ${MFST_STORE_DIR}/cur_kernel_commit_id
-else
-	echo "Unkown option selected... Exiting"
-	exit 0
-fi
-
+get_repo_diff () {
 # Extract only the differential tags 
 # eliminate white spaces at the begining 
 # and substitute the middle whitespaces (separators) with ":"
@@ -312,14 +234,130 @@ do
 	echo "" >>$OUTFILE
 
 done
+}
 
-if [ "$MODE" = "automatic" ]; then
+#################
+#		main 
+#################
+
+checkdeps
+
+while getopts "k:a" opt; do
+	case $opt in
+		a)
+			log "$(basename $0) started in automatic mode...."
+			MODE="automatic"
+			;;
+		k)
+			MODE="kernel_diff"
+			;;
+		\?)
+			log "Invaid option -$OPTARG"
+			exit 0
+			;;
+	esac
+done
+
+if [ "${MODE}" = "standalone" ]; then
+	checkargs $1 $2 $3
+	OLD_MFST=$1
+	NEW_MFST=$2
+	get_repo_diff
+	exit 0
+elif [ "${MODE}" = "kernel_diff" ]; then
+	REPODIR="."
+	unset KERNEL_DIR
+	PREV_KERNEL_ID=$2
+	CUR_KERNEL_ID=$3
 	get_kernel_diffs
+	exit 0
+elif [ "${MODE}" = "automatic" ]; then
+	
+	get_current_manifest
 
-	# cleanup manifest files if executed in automatic mode
-	log "cleaning up downloaded manifest files"
-	rm -f $OLD_MFST
-	rm -f $NEW_MFST
+	#############################################################
+	# first we try out the PREV_MANIFEST enviroment variable
+	##
+	if [ ! -z ${PREV_MANIFEST} ]; then
+		# try to fetch using PREV_MANIFEST (note that must be an url)
+		wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${PREV_MANIFEST##*/} ${PREV_MANIFEST}
+
+		if [ $? -ne 0 ]; then
+			# cleanup current manifest file
+			log "PREV_MANIFEST not found in ${PREV_MANIFEST}. Skipping"
+		fi
+
+		# well we found it in PREV_MANIVEST variable so continue
+		previous_manifest=${PREV_MANIFEST##*/}
+
+		#get the download url based on PREV_MANIFEST and get ride of configuration part in order it can be rebuilded properly
+		prev_download_location=`echo ${PREV_MANIFEST%/*} |sed 's/\/configuration//'`
+
+		log "PREV_MANIFEST found. Manifest file downloaded from ${PREV_MANIFEST}"
+		
+		OUTFILE=${PREV_OUT_FILE}
+		NEW_MFST=$MFST_STORE_DIR/${cur_manifest}
+		OLD_MFST=$MFST_STORE_DIR/${previous_manifest}
+		get_repo_diff
+		log "PREV_MANIFEST diffs fetched and saved in ${OUTFILE}"
+		log "cleaning up PREV_MANIFEST file downloaded in $MFST_STORE_DIR/${previous_manifest}"
+		rm -f $MFST_STORE_DIR/${previous_manifest}
+	else
+		log "\"PREV_MANIFEST\" is empty so could not fetch previous manifest file. You sholud check environment. Continuing"
+	fi
+
+
+	#################################################################
+	# now we try out looking back in time searching for previous manifest
+	##
+	get_manifest_files
+
+	if [ "${found}" = "false" ]; then
+		log "previous manifest not found in ${max_tries} tries, skipping"
+		log "cleaning up downloaded current manifest $MFST_STORE_DIR/${cur_manifest}"
+		rm -f $MFST_STORE_DIR/${cur_manifest}
+		exit 0
+	fi
+	NEW_MFST=$MFST_STORE_DIR/${cur_manifest}
+	OLD_MFST=$MFST_STORE_DIR/${previous_manifest}
+
+	# next we grab kernel commit id
+	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/prev_kernel_commit_id $prev_download_location/configuration/kernel_commit_id
+	if [ $? -ne 0 ]; then
+		log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
+	else
+		PREV_KERNEL_ID=`cat ${MFST_STORE_DIR}/prev_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
+	fi
+
+	# now we have kernel commit id then cleanup file
+	rm -f ${MFST_STORE_DIR}/prev_kernel_commit_id
+
+	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/cur_kernel_commit_id $cur_download_location/configuration/kernel_commit_id
+
+    if [ $? -ne 0 ]; then
+        log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
+	else
+		CUR_KERNEL_ID=`cat ${MFST_STORE_DIR}/cur_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
+    fi
+
+    # now we have kernel commit id then cleanup file
+    rm -f ${MFST_STORE_DIR}/cur_kernel_commit_id
+
+	#Now we fetch repo diffs
+	OUTFILE=${REPO_OUT_FILE}
+	get_repo_diff
+	log "repo changes fetched and saved to ${OUTFILE}"
+
+    get_kernel_diffs
+
+    # cleanup manifest files if executed in automatic mode
+    log "cleaning up downloaded manifest files"
+    rm -f $OLD_MFST
+    rm -f $NEW_MFST
+
+
+    exit 0
+else
+	echo "Unkown option selected... Exiting"
+	exit 0
 fi
-
-exit 0
