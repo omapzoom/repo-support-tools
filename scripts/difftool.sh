@@ -285,22 +285,23 @@ elif [ "${MODE}" = "automatic" ]; then
 		if [ $? -ne 0 ]; then
 			# cleanup current manifest file
 			log "PREV_MANIFEST not found in ${PREV_MANIFEST}. Skipping"
-		fi
+		else
 
-		# well we found it in PREV_MANIVEST variable so continue
-		previous_manifest=${PREV_MANIFEST##*/}
+			# well we found it in PREV_MANIVEST variable so continue
+			previous_manifest=${PREV_MANIFEST##*/}
 
-		#get the download url based on PREV_MANIFEST and get ride of configuration part in order it can be rebuilded properly
-		prev_download_location=`echo ${PREV_MANIFEST%/*} |sed 's/\/configuration//'`
+			#get the download url based on PREV_MANIFEST and get ride of configuration part in order it can be rebuilded properly
+			prev_download_location=`echo ${PREV_MANIFEST%/*} |sed 's/\/configuration//'`
 
-		log "PREV_MANIFEST found. Manifest file downloaded from ${PREV_MANIFEST}"
+			log "PREV_MANIFEST found. Manifest file downloaded from ${PREV_MANIFEST}"
 		
-		OUTFILE=${PREV_OUT_FILE}
-		NEW_MFST=$MFST_STORE_DIR/${cur_manifest}
-		OLD_MFST=$MFST_STORE_DIR/${previous_manifest}
-		get_repo_diff
-		log "PREV_MANIFEST diffs fetched and saved in ${OUTFILE}"
-		log "cleaning up PREV_MANIFEST file downloaded in $MFST_STORE_DIR/${previous_manifest}"
+			OUTFILE=${PREV_OUT_FILE}
+			NEW_MFST=$MFST_STORE_DIR/${cur_manifest}
+			OLD_MFST=$MFST_STORE_DIR/${previous_manifest}
+			get_repo_diff
+			log "PREV_MANIFEST diffs fetched and saved in ${OUTFILE}"
+			log "cleaning up PREV_MANIFEST file downloaded in $MFST_STORE_DIR/${previous_manifest}"
+		fi
 		rm -f $MFST_STORE_DIR/${previous_manifest}
 	else
 		log "\"PREV_MANIFEST\" is empty so could not fetch previous manifest file. You sholud check environment. Continuing"
