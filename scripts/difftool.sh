@@ -92,21 +92,33 @@ checkargs () {
 get_current_manifest () {
     cur_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/L${RELANDDATE}"
     cur_manifest="L${RELANDDATE}_manifest.xml"
-    cur_build=`echo ${RELANDDATE} |grep -o -E [0-9]+$`
-    prev_build=$(($cur_build -1))
 
-    # here we go, get the manifest files
-    wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${cur_manifest} ${cur_download_location}/configuration/${cur_manifest}
-    if [ $? -ne 0 ]; then
-        rm -f ${MFST_STORE_DIR}/${cur_manifest}
+    # try to locate current manifest file 
+	#
+	#we changed the method, now we will try to fetch the cur manifest file locally
+    #wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${cur_manifest} ${cur_download_location}/configuration/${cur_manifest}
+    if [ ! -e ${U_CONFIG_DIR}/${cur_manifest} ]; then
         log "Current Daily Build manifest file ${cur_manifest} not found. Skipped"
-        log "It was trying to fetch from: ${cur_download_location}/configuration/${cur_manifest}"
+        log "It was trying to fetch from: ${U_CONFIG_DIR}/${cur_manifest}"
         exit 0
     fi
-    log "Current Daily Build manifest file ${cur_manifest} found and downloaded"
+	cp ${U_CONFIG_DIR}/${cur_manifest} ${MFST_STORE_DIR}/${cur_manifest}
+    log "Current Daily Build manifest file ${cur_manifest} found and copied"
 }
 
-get_manifest_files () {
+get_current_kernel_commit_id () {
+	kernel_id_found=true
+	if [ ! -e ${U_CONFIG_DIR}/kernel_commit_id ]; then
+		kernel_id_found=false
+		log "Current kernel_commit_id file ${U_CONFIG_DIR}/kernel_commit_id not found, will skip kernel log diff fetching"
+	fi
+	cp ${U_CONFIG_DIR}/kernel_commit_id ${MFST_STORE_DIR}/cur_kernel_commit_id
+}
+
+search_previous_manifest () {
+
+	cur_build=`echo ${RELANDDATE} |grep -o -E [0-9]+$`
+	prev_build=$(($cur_build -1))
 
 	#lets try to find out the previous build manifest
 	for ((x=0; x < max_tries; x++)); do
@@ -142,11 +154,13 @@ get_manifest_files () {
 get_kernel_diffs () {
 	# once we obtained repo diffs then we fetch kernel patch diffs
 	echo "********** KERNEL DIFFS **************" >>$OUTFILE
-	echo "debug: cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
-	echo "debug: prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
+	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
+	echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
 	(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
 	if [ $? -ne 0 ];then
 		log "Warning: there was a problem getting kernel diffs, please check the difftool.log for details"
+	else
+		log "Fetched kernel log diffs and appended to the file $OUTFILE"
 	fi
 }
 
@@ -274,6 +288,7 @@ elif [ "${MODE}" = "kernel_diff" ]; then
 elif [ "${MODE}" = "automatic" ]; then
 	
 	get_current_manifest
+	get_current_kernel_commit_id
 
 	#############################################################
 	# first we try out the PREV_MANIFEST enviroment variable
@@ -311,7 +326,7 @@ elif [ "${MODE}" = "automatic" ]; then
 	#################################################################
 	# now we try out looking back in time searching for previous manifest
 	##
-	get_manifest_files
+	search_previous_manifest
 
 	if [ "${found}" = "false" ]; then
 		log "previous manifest not found in ${max_tries} tries, skipping"
@@ -322,7 +337,7 @@ elif [ "${MODE}" = "automatic" ]; then
 	NEW_MFST=$MFST_STORE_DIR/${cur_manifest}
 	OLD_MFST=$MFST_STORE_DIR/${previous_manifest}
 
-	# next we grab kernel commit id
+	# next we grab the previous kernel_commit_id
 	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/prev_kernel_commit_id $prev_download_location/configuration/kernel_commit_id
 	if [ $? -ne 0 ]; then
 		log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
@@ -333,23 +348,20 @@ elif [ "${MODE}" = "automatic" ]; then
 	# now we have kernel commit id then cleanup file
 	rm -f ${MFST_STORE_DIR}/prev_kernel_commit_id
 
-	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/cur_kernel_commit_id $cur_download_location/configuration/kernel_commit_id
+	#wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/cur_kernel_commit_id $cur_download_location/configuration/kernel_commit_id
 
-    if [ $? -ne 0 ]; then
-        log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
-	else
 		CUR_KERNEL_ID=`cat ${MFST_STORE_DIR}/cur_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
-    fi
-
-    # now we have kernel commit id then cleanup file
-    rm -f ${MFST_STORE_DIR}/cur_kernel_commit_id
 
 	#Now we fetch repo diffs
 	OUTFILE=${REPO_OUT_FILE}
+
 	get_repo_diff
 	log "repo changes fetched and saved to ${OUTFILE}"
 
-    get_kernel_diffs
+	if [ "${kernel_id_found}" = "true" ]; then
+		CUR_KERNEL_ID=`cat ${MFST_STORE_DIR}/cur_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
+    	get_kernel_diffs
+	fi
 
     # cleanup manifest files if executed in automatic mode
     log "cleaning up downloaded manifest files"
