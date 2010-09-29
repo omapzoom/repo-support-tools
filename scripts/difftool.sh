@@ -38,7 +38,7 @@ ARGS_MIN=2
 ARGS_MAX=3
 REPODIR=${GOLDEN_REPO-${BUILD_DIR}/${PROGRAM_NAME}/goldenrepo}
 MODE="standalone"
-found="false"	# flag to tell if previous manifest was found
+prev_manifest_found="false"	# flag to tell if previous manifest was found
 max_tries=5 	# How many tries to fetch previous manifest file
 
 # used tools and their opts
@@ -140,13 +140,13 @@ search_previous_manifest () {
 			log "Previous manifest ${previous_manifest} not found"
 		else
 			# ahaa! here you are
-			found="true"
+			prev_manifest_found="true"
 			log "previous manifest ${previous_manifest} found!"
 			break
 		fi
 	done
 
-	if [ ${found} = "false" ]; then
+	if [ "${prev_manifest_found}" = "false" ]; then
 		log "Couldn't get previous manifest in ${max_tries} tries"
 	fi
 }
@@ -316,6 +316,22 @@ elif [ "${MODE}" = "automatic" ]; then
 			get_repo_diff
 			log "PREV_MANIFEST diffs fetched and saved in ${OUTFILE}"
 			log "cleaning up PREV_MANIFEST file downloaded in $MFST_STORE_DIR/${previous_manifest}"
+
+			if [ "${kernel_id_found}" = "true" ]; then
+				CUR_KERNEL_ID=`cat ${MFST_STORE_DIR}/cur_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
+				# based on PREV_MANIFEST try to fetch previous_kernel_commit_id
+				wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/prev_kernel_commit_id $prev_download_location/configuration/kernel_commit_id
+				if [ $? -ne 0 ]; then
+					log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
+				else
+					PREV_KERNEL_ID=`cat ${MFST_STORE_DIR}/prev_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
+				fi
+				# now we have kernel commit id then cleanup file
+				rm -f ${MFST_STORE_DIR}/prev_kernel_commit_id
+
+				# and now get the diff log for the kernel
+				get_kernel_diffs
+			fi
 		fi
 		rm -f $MFST_STORE_DIR/${previous_manifest}
 	else
@@ -328,7 +344,7 @@ elif [ "${MODE}" = "automatic" ]; then
 	##
 	search_previous_manifest
 
-	if [ "${found}" = "false" ]; then
+	if [ "${prev_manifest_found}" = "false" ]; then
 		log "previous manifest not found in ${max_tries} tries, skipping"
 		log "cleaning up downloaded current manifest $MFST_STORE_DIR/${cur_manifest}"
 		rm -f $MFST_STORE_DIR/${cur_manifest}
