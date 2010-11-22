@@ -36,7 +36,7 @@ OUTFILE=${REPO_OUT_FILE}
 MFST_STORE_DIR=${LOGDIR}
 ARGS_MIN=2
 ARGS_MAX=3
-REPODIR=${GOLDEN_REPO-${BUILD_DIR}/${PROGRAM_NAME}/goldenrepo}
+REPODIR=${MYDROID-${BUILD_DIR}/${PROGRAM_NAME}/goldenrepo}
 MODE="standalone"
 prev_manifest_found="false"	# flag to tell if previous manifest was found
 max_tries=5 	# How many tries to fetch previous manifest file
@@ -256,8 +256,12 @@ done
 
 checkdeps
 
-while getopts "k:a" opt; do
+while getopts "k:af" opt; do
 	case $opt in
+        f)
+            git_opts="--pretty=format:%h#%s#%cd#%cn#%b__EOR__"
+			shift
+            ;;
 		a)
 			log "$(basename $0) started in automatic mode...."
 			MODE="automatic"
