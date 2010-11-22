@@ -29,10 +29,10 @@ PREV_MANIFEST=${PREV_MANIFEST}
 CURDIR=$(dirname $0)
 LOGDIR=${LOGDIR-$CURDIR}
 U_CONFIG_DIR=${U_CONFIG_DIR-$CURDIR}
-LOGFILE=$LOGDIR/difftool.log
+LOGFILE=${LOGFILE-${LOGDIR}/difftool.log}
 PREV_OUT_FILE=$U_CONFIG_DIR/prev_manifest-changes.txt
 REPO_OUT_FILE=$U_CONFIG_DIR/repo-changes.txt
-OUTFILE=${REPO_OUT_FILE}
+OUTFILE=${OUTFILE-${REPO_OUT_FILE}}
 MFST_STORE_DIR=${LOGDIR}
 ARGS_MIN=2
 ARGS_MAX=3
@@ -47,12 +47,17 @@ diff_opts="-E -b -w -B"
 git_opts="--pretty=format:'%h#%s#%cd#%cn#'"
 wget_opts="--tries=2 -nd"
 
+# tool options
+VERBOSE=${VERBOSE-false}
+
 usage () {
 	echo "usage: `basename $0` manifest1.xml manifest2.xml [path/to/repo]"
 }
 
 log () {
-	echo "`date +%b\ %d\ %T` `basename $0`: $1" 1>>$LOGFILE	
+	if [ "${VERBOSE}" = "false" ]; then
+		echo "`date +%b\ %d\ %T` `basename $0`: $1" 1>>$LOGFILE	
+	fi
 	echo "`date +%b\ %d\ %T` `basename $0`: $1"
 }
 
@@ -156,7 +161,12 @@ get_kernel_diffs () {
 	echo "********** KERNEL DIFFS **************" >>$OUTFILE
 	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
 	echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
-	(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
+	if [ "${VERBOSE}" = "true" ]; then
+		(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 
+	else
+		(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
+	fi
+
 	if [ $? -ne 0 ];then
 		log "Warning: there was a problem getting kernel diffs, please check the difftool.log for details"
 	else
@@ -236,10 +246,14 @@ do
 		continue;
 	fi
 
-	echo "Project ${name}" >>$OUTFILE
-
 	# better get git log in a subshell
-	(cd $REPODIR/$path; git log ${git_opts} ${revision_initial}..${revision_final}) >>$OUTFILE 2>>${LOGFILE}
+	if [ "${VERBOSE}" = "true" ]; then
+		echo "Project ${name}" 2>&1
+		(cd $REPODIR/$path; git log ${git_opts} ${revision_initial}..${revision_final}) 2>&1 
+	else
+		echo "Project ${name}" >>$OUTFILE
+		(cd $REPODIR/$path; git log ${git_opts} ${revision_initial}..${revision_final}) >>$OUTFILE 2>>${LOGFILE}
+	fi
 	if [ $? -ne 0 ]; then
 		log "Warning: there was an error fetching git log for project ${name}!"
 	fi
@@ -256,10 +270,11 @@ done
 
 checkdeps
 
-while getopts "k:af" opt; do
+OPTIND=1         # Reset in case getopts has been used previously in the shell
+while getopts "k:afv" opt; do
 	case $opt in
         f)
-            git_opts="--pretty=format:%h#%s#%cd#%cn#%b__EOR__"
+            git_opts="--pretty=format:%h#%s#%cd#%cn#%b__EOR__";
 			shift
             ;;
 		a)
