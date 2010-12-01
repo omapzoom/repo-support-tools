@@ -44,18 +44,18 @@ max_tries=5 	# How many tries to fetch previous manifest file
 # used tools and their opts
 diff=/usr/bin/diff
 diff_opts="-E -b -w -B"
-git_opts="--pretty=format:'%h#%s#%cd#%cn#'"
+git_opts=${git_opts-"--pretty=format:'%h#%s#%cd#%cn#'"}
 wget_opts="--tries=2 -nd"
 
 # tool options
-VERBOSE=${VERBOSE-false}
+OUT_DEVICE=${OUT_DEVICE-file}
 
 usage () {
 	echo "usage: `basename $0` manifest1.xml manifest2.xml [path/to/repo]"
 }
 
 log () {
-	if [ "${VERBOSE}" = "false" ]; then
+	if [ "${OUT_DEVICE}" = "file" ]; then
 		echo "`date +%b\ %d\ %T` `basename $0`: $1" 1>>$LOGFILE	
 	fi
 	echo "`date +%b\ %d\ %T` `basename $0`: $1"
@@ -161,7 +161,7 @@ get_kernel_diffs () {
 	echo "********** KERNEL DIFFS **************" >>$OUTFILE
 	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
 	echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
-	if [ "${VERBOSE}" = "true" ]; then
+	if [ "${OUT_DEVICE}" = "stdout" ]; then
 		(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 
 	else
 		(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
@@ -181,7 +181,7 @@ get_repo_diff () {
 
 diff_tags=`$diff $diff_opts $OLD_MFST $NEW_MFST |sed -n '/<project.*>/p' |sed 's/[\r\n]/\n/g' |sed 's/^<\s*</<change=\"out\" /g' |sed 's/^>\s*</<change=\"in\" /g' |sed 's/^\s*//g' |sed 's/\s/:/g'`
 
-if [ -e ${OUTFILE} ]; then
+if [ -e ${OUTFILE} ] && [ "${OUT_DEVICE}" = "file" ]; then
 	cat /dev/null > ${OUTFILE}
 fi
 
@@ -247,20 +247,18 @@ do
 	fi
 
 	# better get git log in a subshell
-	if [ "${VERBOSE}" = "true" ]; then
+	if [ "${OUT_DEVICE}" = "stdout" ]; then
 		echo "Project ${name}" 2>&1
 		(cd $REPODIR/$path; git log ${git_opts} ${revision_initial}..${revision_final}) 2>&1 
 	else
 		echo "Project ${name}" >>$OUTFILE
 		(cd $REPODIR/$path; git log ${git_opts} ${revision_initial}..${revision_final}) >>$OUTFILE 2>>${LOGFILE}
+		#just blank line among tree commits (as separator)
+	    echo "" >>$OUTFILE
 	fi
 	if [ $? -ne 0 ]; then
 		log "Warning: there was an error fetching git log for project ${name}!"
 	fi
-
-	#just blank line among tree commits (as separator)
-	echo "" >>$OUTFILE
-
 done
 }
 
@@ -271,12 +269,8 @@ done
 checkdeps
 
 OPTIND=1         # Reset in case getopts has been used previously in the shell
-while getopts "k:afv" opt; do
+while getopts "k:a" opt; do
 	case $opt in
-        f)
-            git_opts="--pretty=format:%h#%s#%cd#%cn#%b__EOR__";
-			shift
-            ;;
 		a)
 			log "$(basename $0) started in automatic mode...."
 			MODE="automatic"
