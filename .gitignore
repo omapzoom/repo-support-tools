@@ -1,1 +1,2 @@
-lmbench3/bin/*
+*.o
+lmbench3/src/bk.ver
