@@ -1,0 +1,80 @@
+Flash to EMMC using DB binaries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To get booted from EMMC you need the following files flashed at their respective partitions:
+
+- mbr.bin -> mbr partition
+- MLO -> xloader partition
+- u-boot.bin -> bootloader partition
+- env.txt -> environment partition
+- boot.img -> boot partition
+- system.img (ext3) -> system partition
+- data.img  (ext3)-> userdata partition
+- cache.img (ext3) -> cache paratition
+
+This DB pacakge has all the necessary files. To start flashing, save this folder on your Linux host machine and execute the following:
+
+$ cd <path>/DB_package
+
+NOTE: DO the following depending on the OMAP4 type device you are using:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If OMAP4 ES 2.0 GP device:
+$ cp gp_MLO MLO
+
+If OMAP4 ES 2.0 EMU/HS device <By default DB contains the EMU MLO. If you are using EMU device, this step is optional>
+$ cp emu_MLO MLO
+
+NOTE: The following step is needed only for the first time when flashing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, from this DB package, copy u-boot.bin and MLO files to an SD card (boot partition) and then boot the target board from this external SD card using the following SYSBOOT switch settings to boot from external SD card: 01011101
+
+For SDP4430 board: Switch S8-(1:8): OFF ON OFF ON ON ON OFF ON
+For Blaze board: Switch S2-(1:8): OFF ON OFF ON ON ON OFF ON
+Note: S8-(6:1) corresponds to SYSBOOT[5:0] in TRM. (ON=0, OFF=1)
+
+ After, getting the u-boot prompt on the target, type fastboot and hit enter. You would see the following output:
+
+OMAP44XX SDP # fastboot
+Disconnect USB cable to finish fastboot..
+
+ Now connect a micro USB cable from the Linux Host machine to the MUSB port on the target board.
+
+ On the Linux Host machine, execute the following:
+
+$ cd <path>/DB_package
+
+< Execute the command below to clean all the partitions and flash mbr, uboot and xloader>
+$ sudo ./prepare_fastboot.sh
+
+<After running the command above reset your board, wait for u-boot prompt and type fastboot again to start fastboot client>
+OMAP44XX SDP # fastboot
+
+<This script will flash all the files to their respective partitions>
+$ sudo ./fastboot.sh
+
+NOTE: It will take about 5 - 10 min for the flashing to complete.
+
+ After the flashing is done successfully, reboot the target board with the following SYSBOOT switch settings to boot out of EMMC: 11111101.
+
+For SDP4430 board: Switch S8-(1:8): ON ON ON ON ON ON OFF ON
+For Blaze board: Switch S2-(1:8): ON ON ON ON ON ON OFF ON
+
+ You should see the xloader and bootloader coming up. Make sure you see the following message before the bootloader comes up:
+
+Texas Instruments X-Loader 1.41 (Jun  7 2010 - 08:49:46)
+Starting OS Bootloader from EMMC ...
+
+U-Boot 1.1.4-ga4b2daa9 (Jun 14 2010 - 12:25:49)
+
+Load address: 0x80e80000
+DRAM:  512 MB
+Flash:  0 kB
+In:    serial
+Out:   serial
+Err:   serial
+Net:   KS8851SNL
+Hit any key to stop autoboot:  3
+
+ Let it autoboot and you would see the kernel and android filesystem coming up
