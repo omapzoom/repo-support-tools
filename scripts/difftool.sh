@@ -116,8 +116,9 @@ get_current_kernel_commit_id () {
 	if [ ! -e ${U_CONFIG_DIR}/kernel_commit_id ]; then
 		kernel_id_found=false
 		log "Current kernel_commit_id file ${U_CONFIG_DIR}/kernel_commit_id not found, will skip kernel log diff fetching"
+	else
+		cp ${U_CONFIG_DIR}/kernel_commit_id ${MFST_STORE_DIR}/cur_kernel_commit_id
 	fi
-	cp ${U_CONFIG_DIR}/kernel_commit_id ${MFST_STORE_DIR}/cur_kernel_commit_id
 }
 
 search_previous_manifest () {
@@ -162,9 +163,9 @@ get_kernel_diffs () {
 	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
 	echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
 	if [ "${OUT_DEVICE}" = "stdout" ]; then
-		(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 
+		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 
 	else
-		(cd ${REPODIR}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
+		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
 	fi
 
 	if [ $? -ne 0 ];then
@@ -292,7 +293,7 @@ if [ "${MODE}" = "standalone" ]; then
 	get_repo_diff
 	exit 0
 elif [ "${MODE}" = "kernel_diff" ]; then
-	REPODIR="."
+	YOUR_PATH="."
 	unset KERNEL_DIR
 	PREV_KERNEL_ID=$2
 	CUR_KERNEL_ID=$3
@@ -338,15 +339,14 @@ elif [ "${MODE}" = "automatic" ]; then
 					log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
 				else
 					PREV_KERNEL_ID=`cat ${MFST_STORE_DIR}/prev_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
+					# and now get the diff log for the kernel
+					get_kernel_diffs
 				fi
 				# now we have kernel commit id then cleanup file
 				rm -f ${MFST_STORE_DIR}/prev_kernel_commit_id
-
-				# and now get the diff log for the kernel
-				get_kernel_diffs
 			fi
 		fi
-		rm -f $MFST_STORE_DIR/${previous_manifest}
+	[ -f $MFST_STORE_DIR/${previous_manifest} ] && rm -f $MFST_STORE_DIR/${previous_manifest}
 	else
 		log "\"PREV_MANIFEST\" is empty so could not fetch previous manifest file. You sholud check environment. Continuing"
 	fi
@@ -369,6 +369,7 @@ elif [ "${MODE}" = "automatic" ]; then
 	# next we grab the previous kernel_commit_id
 	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/prev_kernel_commit_id $prev_download_location/configuration/kernel_commit_id
 	if [ $? -ne 0 ]; then
+		kernel_id_found="false"
 		log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
 	else
 		PREV_KERNEL_ID=`cat ${MFST_STORE_DIR}/prev_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
@@ -376,10 +377,6 @@ elif [ "${MODE}" = "automatic" ]; then
 
 	# now we have kernel commit id then cleanup file
 	rm -f ${MFST_STORE_DIR}/prev_kernel_commit_id
-
-	#wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/cur_kernel_commit_id $cur_download_location/configuration/kernel_commit_id
-
-		CUR_KERNEL_ID=`cat ${MFST_STORE_DIR}/cur_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
 
 	#Now we fetch repo diffs
 	OUTFILE=${REPO_OUT_FILE}
