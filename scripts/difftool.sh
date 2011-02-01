@@ -159,12 +159,12 @@ search_previous_manifest () {
 
 get_kernel_diffs () {
 	# once we obtained repo diffs then we fetch kernel patch diffs
-	echo "********** KERNEL DIFFS **************" >>$OUTFILE
-	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
-	echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
 	if [ "${OUT_DEVICE}" = "stdout" ]; then
 		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 
 	else
+    	echo "********** KERNEL DIFFS **************" >>$OUTFILE
+    	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
+	    echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
 		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
 	fi
 
