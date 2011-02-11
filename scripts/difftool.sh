@@ -1,14 +1,32 @@
 #!/bin/bash
 
-### BEGIN INFO
+######INFO
+# difftool.sh
+#
+# pull repository differences tool
+#
+# Copyright (C) 2010 Texas Instruments, Inc.
+#
+# This package is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+# WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+#
+#  History
+#  -------
+#  0.9 2010-09-08 Jaime A. Garcia <jagarcia@ti.com> Created initial version
+#
+######
+# 
 # Usage -
 #
 # this tool has the following operation modes:
 #
 # fully automatic mode:		./difftool -a
-#
 # manual manifest mode:		./difftool oldmanifest.xml newmanifest.xml [/path/to/goldenrepo]
-#
 # manual kernel diff mode:	./difftool -k commit_id_1 commit_id_2
 #
 # dependencies: git, diffutils, wget
@@ -125,6 +143,10 @@ search_previous_manifest () {
 
 	cur_build=`echo ${RELANDDATE} |grep -o -E [0-9]+$`
 	prev_build=$(($cur_build -1))
+	db_index_file="index.html"
+	curbranch=`echo "${REL}_${DATE}" | grep -o $REL.*DailyBuild`
+
+	wget {wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${db_index_file} http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')
 
 	#lets try to find out the previous build manifest
 	for ((x=0; x < max_tries; x++)); do
@@ -133,9 +155,10 @@ search_previous_manifest () {
 			break
 		fi
 
-		previous_manifest=`echo $RELANDDATE |sed "s/[0-9]*$/${prev_build}/"`
-		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/L${previous_manifest}"
-		previous_manifest="L${previous_manifest}_manifest.xml"
+		res=`grep -oE \"L${curbranch}[\-\._a-zA-Z0-9]*[^0-9]${prev_build}[^0-9]\" ${MFST_STORE_DIR}/${db_index_file}`
+		res=`echo $res|sed 's/\"//g'|sed 's/\/$//'`
+		previous_manifest="${res}_manifest.xml"
+		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/${res}"
 		 
 		wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${previous_manifest} ${prev_download_location}/configuration/${previous_manifest}
 
@@ -155,6 +178,8 @@ search_previous_manifest () {
 	if [ "${prev_manifest_found}" = "false" ]; then
 		log "Couldn't get previous manifest in ${max_tries} tries"
 	fi
+	#clean up DB index file
+	rm -f ${MFST_STORE_DIR}/${db_index_file}
 }
 
 get_kernel_diffs () {
@@ -372,6 +397,8 @@ elif [ "${MODE}" = "automatic" ]; then
 		kernel_id_found="false"
 		log "wget warning: there was an error trying to get previous kernel commit id from $prev_download_location/configuration/kernel_commit_id"
 	else
+		log "previous kernel_commit_id found and downloaded from:"
+		log "$prev_download_location/configuration/kernel_commit_id"
 		PREV_KERNEL_ID=`cat ${MFST_STORE_DIR}/prev_kernel_commit_id |grep -o -E '[a-z0-9]{40}'`
 	fi
 
