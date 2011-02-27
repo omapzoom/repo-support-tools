@@ -1,7 +1,7 @@
 Flash to EMMC using DB binaries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To get booted from EMMC you need the following files flashed at their respective partitions:
+To get booted from EMMC you need the following files flashed at their respective partitions on Froyo:
 
 - mbr.bin -> mbr partition
 - MLO -> xloader partition
@@ -11,6 +11,14 @@ To get booted from EMMC you need the following files flashed at their respective
 - system.img (ext3) -> system partition
 - data.img  (ext3)-> userdata partition
 - cache.img (ext3) -> cache paratition
+
+On Gingerbread we have a different partition set:
+- MLO -> xloader partition
+- u-boot.bin -> bootloader partition
+- boot.img -> boot partition
+- system.img (ext4) -> system partition
+- data.img  (ext4-> userdata partition
+- cache.img (ext4) -> cache paratition
 
 This DB pacakge has all the necessary files. To start flashing, save this folder on your Linux host machine and execute the following:
 
@@ -48,11 +56,17 @@ $ cd <path>/DB_package
 < Execute the command below to clean all the partitions and flash mbr, uboot and xloader>
 $ sudo ./prepare_fastboot.sh
 
+Note: If you are flashing a froyo build, use the command
+$ sudo ./prepare_fastboot.sh froyo
+
 <After running the command above reset your board, wait for u-boot prompt and type fastboot again to start fastboot client>
 OMAP44XX SDP # fastboot
 
 <This script will flash all the files to their respective partitions>
 $ sudo ./fastboot.sh
+
+Note: If you are flashing a froyo build, use the command
+$ sudo ./fastboot.sh froyo
 
 NOTE: It will take about 5 - 10 min for the flashing to complete.
 

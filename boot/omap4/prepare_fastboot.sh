@@ -8,11 +8,17 @@ echo "#####################################################################"
 echo ######################################################################
 echo Now ERASING all the fastboot partitions
 echo #######################################################################
-echo "#####################################################################"
-./fastboot erase ptable
+
+if [ "$1" != "froyo" ] ; then
+  #Format the gpt on storage device
+  echo "Erasing Android Gingerbread release"
+else
+  echo "Erasing Android Froyo release"
+  ./fastboot erase ptable
+  ./fastboot erase environment
+fi
 ./fastboot erase xloader
 ./fastboot erase bootloader
-./fastboot erase environment
 ./fastboot erase boot
 ./fastboot erase system
 ./fastboot erase userdata
@@ -24,7 +30,11 @@ echo ######################################################################
 echo NOW FLASHING The bootloader ....
 echo ######################################################################
 echo "#####################################################################"
-./fastboot flash ptable ./mbr.bin
+if [ "$1" != "froyo" ] ; then
+  #Format the gpt on storage device
+else
+  ./fastboot flash ptable ./mbr.bin
+fi
 ./fastboot flash xloader ./MLO
 ./fastboot flash bootloader ./u-boot.bin
 echo ######################################################################
