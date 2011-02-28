@@ -16,13 +16,13 @@ else
   echo "Erasing Android Froyo release"
   ./fastboot erase ptable
   ./fastboot erase environment
+  ./fastboot erase xloader
+  ./fastboot erase bootloader
+  ./fastboot erase boot
+  ./fastboot erase system
+  ./fastboot erase userdata
+  ./fastboot erase cache
 fi
-./fastboot erase xloader
-./fastboot erase bootloader
-./fastboot erase boot
-./fastboot erase system
-./fastboot erase userdata
-./fastboot erase cache
 echo "#####################################################################"
 echo ######################################################################
 echo "** COMPLETED ERASING fastboot partitions **"
@@ -31,7 +31,7 @@ echo NOW FLASHING The bootloader ....
 echo ######################################################################
 echo "#####################################################################"
 if [ "$1" != "froyo" ] ; then
-  #Format the gpt on storage device
+  echo "Format the gpt on storage device"
 else
   ./fastboot flash ptable ./mbr.bin
 fi
