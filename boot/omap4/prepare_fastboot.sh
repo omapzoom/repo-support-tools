@@ -11,7 +11,8 @@ echo #######################################################################
 
 if [ "$1" != "froyo" ] ; then
   #Format the gpt on storage device
-  echo "Erasing Android Gingerbread release"
+  echo "This script does nothing for Gingerbread. If you are using Froyo"
+  echo " run this script with sudo ./prepare_fastboot.sh froyo"
 else
   echo "Erasing Android Froyo release"
   ./fastboot erase ptable
@@ -34,9 +35,9 @@ if [ "$1" != "froyo" ] ; then
   echo "Format the gpt on storage device"
 else
   ./fastboot flash ptable ./mbr.bin
+  ./fastboot flash xloader ./MLO
+  ./fastboot flash bootloader ./u-boot.bin
 fi
-./fastboot flash xloader ./MLO
-./fastboot flash bootloader ./u-boot.bin
 echo ######################################################################
 echo "#####################################################################"
 echo ######################################################################
