@@ -1,1 +1,1 @@
-./mkbootimg --kernel zImage --ramdisk ramdisk.img --base 0x80000000 --cmdline aaaaaa --board omap4 -o boot.img
+./mkbootimg --kernel zImage --ramdisk ramdisk.img --base 0x80000000 --cmdline "console=ttyO2,115200n8 mem=456M@0x80000000 mem=512M@0xA0000000 init=/init vram=10M omapfb.vram=0:4M androidboot.console=ttyO2" --board omap4 -o boot.img
