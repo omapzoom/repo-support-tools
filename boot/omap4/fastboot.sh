@@ -13,6 +13,10 @@ params=$#
 # Functions
 # =============================================================================
 
+# Prints script usage
+# @ Function: usage
+# @ Parameters: none
+# @ Return: exit status
 usage() {
 	cat <<-EOF >&2
 	----------------------------------------------
@@ -28,18 +32,33 @@ usage() {
 	exit 1
 }
 
+# Prints a message with a specific format
+# @ Function: errmsg
+# @ Parameters: <message to display>
+# @ Return: exit status
+errormsg() {
+	messages=( "$@" )
+	echo -e ""
+	for index in ${!messages[@]}; do
+		echo -e "${messages[$index]}" 1>&2
+	done
+	echo -e ""
+	exit 1
+}
+
 # =============================================================================
 # pre-run
 # =============================================================================
 
 # Verify fastboot program is available
 # Verify user permission to run fastboot
+# Verify fastboot detects a device, otherwise exit
 if [ -f $fastboot ]; then
 	fastboot_status=`$fastboot devices 2>&1`
 	if [ `echo $fastboot_status | grep -wc "no permissions"` -gt 0 ]; then
 		cat <<-EOF >&2
 		-------------------------------------------
-		 Fastboot requires admistrator permissions
+		 Fastboot requires administrator permissions
 		 Please run the script as root or create a
 		 fastboot udev rule, e.g:
 
@@ -51,6 +70,12 @@ if [ -f $fastboot ]; then
 		-------------------------------------------
 		EOF
 		exit 1
+	elif [ "X$fastboot_status" = "X" ]; then
+		errormsg "No device detected. Please ensure that" \
+			 "fastboot is running on the target device"
+	else
+		device=`echo $fastboot_status | awk '{print$1}'`
+		echo -e "\nFastboot - device detected: $device\n"
 	fi
 else
 	errormsg "Error: fastboot is not available at $fastboot"
