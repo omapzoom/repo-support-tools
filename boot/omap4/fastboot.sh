@@ -7,6 +7,8 @@
 
 flavor="$1"
 fastboot="./fastboot"
+android=( gingerbread froyo eclair donut )
+params=$#
 
 # =============================================================================
 # Functions
@@ -33,7 +35,15 @@ usage() {
 # Main
 # =============================================================================
 
+# Verify Script usage and validate all parameters
+if [ $params -ne 1 ]; then
+	usage
+fi
 
+if [ ! `echo ${android[@]} | grep -wc $flavor` -eq 1 ]; then
+	echo -e "\nERROR: First parameter introduced is invalid\n" 1>&2
+	usage
+fi
 
 case $flavor in
 "gingerbread")
