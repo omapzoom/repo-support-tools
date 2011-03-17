@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # =============================================================================
 # Local variables
 # =============================================================================
@@ -29,7 +28,33 @@ usage() {
 	exit 1
 }
 
+# =============================================================================
+# pre-run
+# =============================================================================
 
+# Verify fastboot program is available
+# Verify user permission to run fastboot
+if [ -f $fastboot ]; then
+	fastboot_status=`$fastboot devices 2>&1`
+	if [ `echo $fastboot_status | grep -wc "no permissions"` -gt 0 ]; then
+		cat <<-EOF >&2
+		-------------------------------------------
+		 Fastboot requires admistrator permissions
+		 Please run the script as root or create a
+		 fastboot udev rule, e.g:
+
+		 % cat /etc/udev/rules.d/99_android.rules
+		   SUBSYSTEM=="usb",
+		   SYSFS{idVendor}=="0451"
+		   OWNER="<username>"
+		   GROUP="adm"
+		-------------------------------------------
+		EOF
+		exit 1
+	fi
+else
+	errormsg "Error: fastboot is not available at $fastboot"
+fi
 
 # =============================================================================
 # Main
