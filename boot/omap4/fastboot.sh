@@ -46,6 +46,20 @@ errormsg() {
 	exit 1
 }
 
+# Verify if a file exist
+# @ Function: findfile
+# @ Parameters: <file>
+# @ Return: exit status
+findfile() {
+	file=$1
+	if [ "X$file" = "X" ]; then
+		errormsg "Error: file name not specified"
+	elif [ ! -f $file -a ! -s $file ]; then
+		errormsg "Error: $file can not be found" \
+			 "The flash process can not be initialized"
+	fi
+}
+
 # =============================================================================
 # pre-run
 # =============================================================================
@@ -94,6 +108,28 @@ if [ ! `echo ${android[@]} | grep -wc $flavor` -eq 1 ]; then
 	echo -e "\nERROR: First parameter introduced is invalid\n" 1>&2
 	usage
 fi
+
+# Verify that all the files required for the fastboot flas process
+# are available
+
+findfile "./MLO"
+findfile "./u-boot.bin"
+findfile "./boot.img"
+findfile "./system.img"
+findfile "./cache.img"
+
+case $flavor in
+"gingerbread")
+	findfile "./userdata.img"
+	;;
+"froyo" | "eclair" | "donut")
+	findfile "./data.img"
+	findfile "./mbr.bin"
+	findfile "./env.txt"
+	;;
+esac
+
+# Start fastboot flash process
 
 case $flavor in
 "gingerbread")
