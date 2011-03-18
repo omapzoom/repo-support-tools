@@ -109,23 +109,62 @@ if [ ! `echo ${android[@]} | grep -wc $flavor` -eq 1 ]; then
 	usage
 fi
 
-# Verify that all the files required for the fastboot flas process
-# are available
+product=`$fastboot getvar product 2>&1 | grep product | awk '{print$2}'`
+cputype=`$fastboot getvar secure 2>&1  | grep secure  | awk '{print$2}'`
+cpurev=`$fastboot getvar cpurev 2>&1   | grep cpurev  | awk '{print$2}'`
 
-findfile "./MLO"
-findfile "./u-boot.bin"
-findfile "./boot.img"
-findfile "./system.img"
-findfile "./cache.img"
+# Panda board can not be flashed using fastboot
+
+if [ $product = "PANDA" ]; then
+	errormsg "Panda board can not be flashed using fastboot"
+fi
+
+# Backwards Compatibility for older bootloader versions
+
+if [ $product = "SDP4" ]; then
+	product="Blaze"
+fi
+
+# Provide the correct binaries according to the platform
+
+# TODO: provide multi-platform binaries in one package
+# What is common among platforms??
+# uboot="${product}_${cputype}_${cpurev}_uboot"
+# systemimg="${product}_${cputype}_${cpurev}_systemimg"
+# userdataimg="${product}_${cputype}_${cpurev}_userdataimg"
+# cacheimg="${product}_${cputype}_${cpurev}_cacheimg"
+# mbr="${product}_${cputype}_${cpurev}_mbr"
+# env="${product}_${cputype}_${cpurev}_env"
+# dataimg="${product}_${cputype}_${cpurev}_dataimg"
+# bootimg="${product}_${cputype}_${cpurev}_bootimg"
+
+xloader="${product}_${cputype}_${cpurev}_MLO"
+uboot="./u-boot.bin"
+systemimg="./system.img"
+userdataimg="./userdata.img"
+cacheimg="./cache.img"
+mbr="./mrb.bin"
+env="./env.txt"
+dataimg="./data.img"
+bootimg="./boot.img"
+
+# Verify that all the files required for the fastboot flash
+# process are available
+
+findfile $xloader
+findfile $uboot
+findfile $bootimg
+findfile $systemimg
+findfile $cacheimg
 
 case $flavor in
 "gingerbread")
-	findfile "./userdata.img"
+	findfile $userdataimg
 	;;
 "froyo" | "eclair" | "donut")
-	findfile "./data.img"
-	findfile "./mbr.bin"
-	findfile "./env.txt"
+	findfile $dataimg
+	findfile $mbr
+	findfile $env
 	;;
 esac
 
@@ -134,34 +173,36 @@ esac
 case $flavor in
 "gingerbread")
 	#Format the gpt on storage device
-	echo "Flashing Android $flavor release"
+	echo -e "\nSystem: $product $cputype $cpurev"
+	echo -e "Flashing Android $flavor release\n"
 	#TI specific boot loader flashing
-	$fastboot flash xloader ./MLO
-	$fastboot flash bootloader ./u-boot.bin
+	$fastboot flash xloader $xloader
+	$fastboot flash bootloader $uboot
 	$fastboot reboot-bootloader
 	sleep 5
 	$fastboot oem format
 	#Generic Android partitions
-	$fastboot flash boot ./boot.img
-	$fastboot flash system ./system.img
+	$fastboot flash boot $bootimg
+	$fastboot flash system $systemimg
 	# Gingerbread specific
-	$fastboot flash userdata ./userdata.img
+	$fastboot flash userdata $userdataimg
 	# Generic Android partitions
-	$fastboot flash cache ./cache.img
+	$fastboot flash cache $cacheimg
 	;;
 "froyo" | "eclair" | "donut")
-	echo "Flashing Android $flavor release"
-	$fastboot flash ptable ./mbr.bin
-	$fastboot flash environment ./env.txt
-	$fastboot flash xloader ./MLO
-	$fastboot flash bootloader ./u-boot.bin
+	echo -e "\nSystem: $product $cputype $cpurev"
+	echo -e "Flashing Android $flavor release\n"
+	$fastboot flash ptable $mbr
+	$fastboot flash environment $env
+	$fastboot flash xloader $xloader
+	$fastboot flash bootloader $uboot
 	# Generic Android partitions
-	$fastboot flash boot ./boot.img
-	$fastboot flash system ./system.img
+	$fastboot flash boot $bootimg
+	$fastboot flash system $systemimg
 	# Froyo specific
-	$fastboot flash userdata ./data.img
+	$fastboot flash userdata $dataimg
 	# Generic Android partitions
-	$fastboot flash cache ./cache.img
+	$fastboot flash cache $cacheimg
 	;;
 *)
 	usage
