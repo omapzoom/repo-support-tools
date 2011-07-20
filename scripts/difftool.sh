@@ -146,7 +146,7 @@ search_previous_manifest () {
 	db_index_file="index.html"
 	curbranch=`echo "${REL}_${DATE}" | grep -o $REL.*DailyBuild`
 
-	wget {wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${db_index_file} http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')
+	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${db_index_file} http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')
 
 	#lets try to find out the previous build manifest
 	for ((x=0; x < max_tries; x++)); do
