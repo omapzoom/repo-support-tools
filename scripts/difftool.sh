@@ -69,7 +69,7 @@ wget_opts="--tries=2 -nd"
 OUT_DEVICE=${OUT_DEVICE-file}
 
 usage () {
-	echo "usage: `basename $0` manifest1.xml manifest2.xml [path/to/repo]"
+	echo "usage: `basename $0` old_manifest.xml new_manifest.xml [path/to/repository]"
 }
 
 log () {
@@ -147,6 +147,12 @@ search_previous_manifest () {
 	curbranch=`echo "${REL}_${DATE}" | grep -o $REL.*DailyBuild`
 
 	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${db_index_file} http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')
+	index_content=`cat ${MFST_STORE_DIR}/${db_index_file}`
+	if [ -z "$index_content" ]; then
+		log "I could not get index file for the manifest container URL because is missing or is invalid, see log file for details."
+		prev_manifest_found="false"
+		return
+	fi
 
 	#lets try to find out the previous build manifest
 	for ((x=0; x < max_tries; x++)); do
@@ -418,8 +424,8 @@ elif [ "${MODE}" = "automatic" ]; then
 
     # cleanup manifest files if executed in automatic mode
     log "cleaning up downloaded manifest files"
-    rm -f $OLD_MFST
-    rm -f $NEW_MFST
+#    rm -f $OLD_MFST
+#   rm -f $NEW_MFST
 
 
     exit 0
