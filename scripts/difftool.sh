@@ -144,7 +144,6 @@ search_previous_manifest () {
 	cur_build=`echo ${RELANDDATE} |grep -o -E [0-9]+$`
 	prev_build=$(($cur_build -1))
 	db_index_file="index.html"
-	curbranch=`echo "${REL}_${DATE}" | grep -o $REL.*DailyBuild`
 
 	wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${db_index_file} http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')
 	index_content=`cat ${MFST_STORE_DIR}/${db_index_file}`
@@ -161,12 +160,12 @@ search_previous_manifest () {
 			break
 		fi
 
-		res=`grep -oE \"L${curbranch}[\-\._a-zA-Z0-9]*[^0-9]${prev_build}[^0-9]\" ${MFST_STORE_DIR}/${db_index_file}`
+		res=`grep -oiE \"L${REL}[\-\._a-zA-Z0-9]*${RELEASE_BRANCH}[\-\._a-zA-Z0-9]*[^0-9]${prev_build}[^0-9]\" ${MFST_STORE_DIR}/${db_index_file}`
 		res=`echo $res|sed 's/\"//g'|sed 's/\/$//'`
 		previous_manifest="${res}_manifest.xml"
-		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/${res}"
+		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/${res}/configuration"
 		 
-		wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${previous_manifest} ${prev_download_location}/configuration/${previous_manifest}
+		wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${previous_manifest} ${prev_download_location}/${previous_manifest}
 
 		if [ $? -ne 0 ]; then
 			#oops! not found, decrement DailyBuild by one and try again
@@ -424,8 +423,8 @@ elif [ "${MODE}" = "automatic" ]; then
 
     # cleanup manifest files if executed in automatic mode
     log "cleaning up downloaded manifest files"
-#    rm -f $OLD_MFST
-#   rm -f $NEW_MFST
+    rm -f $OLD_MFST
+    rm -f $NEW_MFST
 
 
     exit 0
