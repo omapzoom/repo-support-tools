@@ -163,9 +163,9 @@ search_previous_manifest () {
 		res=`grep -oiE \"L${REL}[\-\._a-zA-Z0-9]*${RELEASE_BRANCH}[\-\._a-zA-Z0-9]*[^0-9]${prev_build}[^0-9]\" ${MFST_STORE_DIR}/${db_index_file}`
 		res=`echo $res|sed 's/\"//g'|sed 's/\/$//'`
 		previous_manifest="${res}_manifest.xml"
-		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/${res}/configuration"
-		 
-		wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${previous_manifest} ${prev_download_location}/${previous_manifest}
+		prev_download_location="http://omapssp.dal.design.ti.com/$(echo ${CLEARCASE_UPLOAD_DIR}|sed -e 's#/vobs/wtbu/#VOBS/#')/${res}"
+
+		wget ${wget_opts} -a ${LOGFILE} -O ${MFST_STORE_DIR}/${previous_manifest} ${prev_download_location}/configuration/${previous_manifest}
 
 		if [ $? -ne 0 ]; then
 			#oops! not found, decrement DailyBuild by one and try again
@@ -192,10 +192,10 @@ get_kernel_diffs () {
 	if [ "${OUT_DEVICE}" = "stdout" ]; then
 		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 
 	else
-    	echo "********** KERNEL DIFFS **************" >>$OUTFILE
-    	echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
-	    echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
-		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) >>$OUTFILE 2>>${LOGFILE}
+    		echo "********** KERNEL DIFFS **************" >>$OUTFILE
+    		echo "cur_kernel_commit_id is ${CUR_KERNEL_ID}" >>$OUTFILE
+	    	echo "prev_kernel_commit_id is ${PREV_KERNEL_ID}" >>$OUTFILE
+		(cd ${YOUR_PATH}/${KERNEL_DIR}; git log ${git_opts} ${PREV_KERNEL_ID}..${CUR_KERNEL_ID}) 2>&1 >>$OUTFILE
 	fi
 
 	if [ $? -ne 0 ];then
