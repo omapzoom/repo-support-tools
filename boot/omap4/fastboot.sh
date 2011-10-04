@@ -6,7 +6,7 @@
 
 flavor="$1"
 fastboot="./fastboot"
-android=( gingerbread froyo eclair donut )
+android=( honeycomb gingerbread froyo eclair donut )
 params=$#
 
 # =============================================================================
@@ -25,7 +25,11 @@ usage() {
 	 fastboot.sh [flavor]
 
 	 @ flavor: correspond to the Android release:
-	           gingerbread, froyo, eclair, donut
+	           * honeycomb
+	           * gingerbread
+	           * froyo
+	           * eclair
+	           * donut
 
 	----------------------------------------------
 	EOF
@@ -101,6 +105,7 @@ fi
 
 # Verify Script usage and validate all parameters
 if [ $params -ne 1 ]; then
+	echo -e "\nERROR: Number of parameters is invalid\n" 1>&2
 	usage
 fi
 
@@ -158,7 +163,7 @@ findfile $systemimg
 findfile $cacheimg
 
 case $flavor in
-"gingerbread")
+"gingerbread" | "honeycomb")
 	findfile $userdataimg
 	;;
 "froyo" | "eclair" | "donut")
@@ -171,7 +176,7 @@ esac
 # Start fastboot flash process
 
 case $flavor in
-"gingerbread")
+"gingerbread" | "honeycomb")
 	#Format the gpt on storage device
 	echo -e "\nSystem: $product $cputype $cpurev"
 	echo -e "Flashing Android $flavor release\n"
@@ -205,6 +210,7 @@ case $flavor in
 	$fastboot flash cache $cacheimg
 	;;
 *)
+	echo -e "\nERROR: Flavor flash procedure not supported\n" 1>&2
 	usage
 	;;
 esac
