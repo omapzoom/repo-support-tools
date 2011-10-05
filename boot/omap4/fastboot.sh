@@ -99,6 +99,16 @@ else
 	errormsg "Error: fastboot is not available at $fastboot"
 fi
 
+# Verify that the Bootloader version is capable
+# to provide the correct cpu revision
+
+bootloader_version=`$fastboot getvar version-bootloader 2>&1 | \
+			grep version-bootloader | awk '{print$2}'`
+if [ "X$bootloader_version" = "X" ]; then
+	errormsg "ERROR: Update the bootloader version in your device\n" \
+		 "I am not able to retrieve the correct CPU rev information"
+fi
+
 # =============================================================================
 # Main
 # =============================================================================
