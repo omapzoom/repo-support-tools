@@ -1,5 +1,24 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2012 Texas Instruments
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: James W. Mills <jameswmills@ti.com>
+#
+# Description: Parse the output of difftool.sh, converting the raw
+# data into plain text, XML, or HTML.
+
 import sys
 import argparse
 import re
@@ -9,6 +28,7 @@ if __name__ == "__main__":
 
   def populate_data(rdiff):
     data = {}
+    project = None
     pline = re.compile('^Project ')
     dline = re.compile('#')
     for l in rdiff:
@@ -16,6 +36,9 @@ if __name__ == "__main__":
         project = l.split()[-1].strip()
         data[project] = []
       else:
+        if not project:
+          project = "kernel"
+          data[project] = []
         cinfo = [x.strip().strip("'") for x in l.split('#') if x.strip().strip("'") != '']
         cdata = {}
         cdata['commit'] = cinfo[0]
@@ -73,7 +96,7 @@ if __name__ == "__main__":
   data = populate_data(rdiff)
 
   if "xml" in args.type:
-    print "I wiould do XML"
+    print "I would generate XML"
   elif "html" in args.type:
     fdata = convert_to_html_table(data)
   elif "text" in args.type:
