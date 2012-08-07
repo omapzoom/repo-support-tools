@@ -23,8 +23,25 @@ import sys
 import argparse
 import re
 import string
+from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 
 if __name__ == "__main__":
+
+  def indent(elem, level=0):
+    i = "\n" + level*"  "
+    if len(elem):
+      if not elem.text or not elem.text.strip():
+        elem.text = i + "  "
+      if not elem.tail or not elem.tail.strip():
+        elem.tail = i
+      for elem in elem:
+        indent(elem, level+1)
+      if not elem.tail or not elem.tail.strip():
+        elem.tail = i
+    else:
+      if level and (not elem.tail or not elem.tail.strip()):
+        elem.tail = i
+    return elem
 
   def populate_data(rdiff):
     data = {}
@@ -47,6 +64,25 @@ if __name__ == "__main__":
         cdata['author'] = cinfo[3]
         data[project].append(cdata)
     return data
+
+  def convert_to_xml(data):
+    top = Element('ManifestDifferences')
+    comment = Comment('Changes from %s' % (args.prev))
+    top.append(comment)
+    for k in data.keys():
+      proj = SubElement(top, 'project')
+      proj.text = k
+      for cd in data[k]:
+        ci = SubElement(proj, 'commit')
+        commit_id = SubElement(ci, 'id')
+        commit_id.text = cd['commit']
+        commit_title = SubElement(ci, 'title')
+        commit_title.text = cd['title']
+        commit_date = SubElement(ci, 'date')
+        commit_date.text = cd['date']
+        commit_author = SubElement(ci, 'author')
+        commit_author.text = cd['author']
+    return top
 
   def convert_to_html_table(data):
     html_data = []
@@ -96,12 +132,18 @@ if __name__ == "__main__":
   data = populate_data(rdiff)
 
   if "xml" in args.type:
-    print "I would generate XML"
+    xml = convert_to_xml(data)
+    indent(xml)
+    print tostring(xml)
+    sys.exit()
   elif "html" in args.type:
     fdata = convert_to_html_table(data)
+    print '\n'.join(fdata)
+    sys.exit()
   elif "text" in args.type:
     fdata = convert_to_text(data)
+    print '\n'.join(fdata)
+    sys.exit()
   else:
     parser.print_help()
     sys.exit()
-  print '\n'.join(fdata)
