@@ -77,7 +77,6 @@ log () {
 	if [ "${OUT_DEVICE}" = "file" ]; then
 		echo "`date +%b\ %d\ %T` `basename $0`: $1" 1>>$LOGFILE
 	fi
-	echo "`date +%b\ %d\ %T` `basename $0`: $1"
 }
 
 checkdeps () {
