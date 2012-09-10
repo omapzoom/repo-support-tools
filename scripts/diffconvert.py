@@ -57,12 +57,16 @@ if __name__ == "__main__":
           project = "kernel"
           data[project] = []
         cinfo = [x.strip().strip("'") for x in l.split('#') if x.strip().strip("'") != '']
-        cdata = {}
-        cdata['commit'] = cinfo[0]
-        cdata['title'] = cinfo[1]
-        cdata['date'] = cinfo[2]
-        cdata['author'] = cinfo[3]
-        data[project].append(cdata)
+        try:
+          cdata = {}
+          cdata['commit'] = cinfo[0]
+          cdata['title'] = cinfo[1]
+          cdata['date'] = cinfo[2]
+          cdata['author'] = cinfo[3]
+          data[project].append(cdata)
+        except:
+          #Stupid weird bug in difftool.sh :(
+          data.pop(project)
     return data
 
   def convert_to_xml(data):
