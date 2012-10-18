@@ -218,7 +218,7 @@ fi
 
 for tag in $diff_tags
 do
-	fields=`echo $tag |sed 's/<//' |sed 's/\/>//g' |sed 's/\"//g' | awk -F^ '{ print $1, $2, $3, $4, $5, $6}'`
+	fields=`echo $tag |sed 's/<//' |sed 's/\/>//g' |sed 's/\"//g' | awk -F^ '{ print $1, $2, $3, $4, $5, $6, $7}'`
 	name=undefined
 	path=undefined
 	revision=undefined
